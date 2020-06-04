@@ -817,7 +817,7 @@ write_files:
     content: |
       KUBELET_OPTS="{{.Experimental.KubeletOpts}}"
 
-  - path: /etc/cni/docker_opts_cni.env
+  - path: /etc/kubernetes/cni/docker_opts_cni.env
     content: |
       DOCKER_OPT_BIP=""
       DOCKER_OPT_IPMASQ=""

@@ -1043,10 +1043,9 @@ write_files:
       {{- if .Kubernetes.Networking.AmazonVPC.Enabled }}
       deploy "${mfdir}/aws-k8s-cni.yaml"
       remove "${mfdir}/canal.yaml"
-      {{- else if eq .Kubernetes.Networking.SelfHosting.Type "canal" }}
-      deploy "${mfdir}/canal.yaml"
       {{- else }}
-      remove "${mfdir}/canal.yaml"
+      deploy "${mfdir}/canal.yaml"
+      remove "${mfdir}/aws-k8s-cni.yaml"
       {{- end }}
 
       # CLUSTER DNS

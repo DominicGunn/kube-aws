@@ -339,7 +339,7 @@ coreos:
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStartPre=/usr/bin/mkdir -p /opt/cni/bin
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /etc/cni/net.d
+        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/cni/net.d
         ExecStartPre=/usr/bin/mkdir -p /var/run/calico
         ExecStartPre=/usr/bin/mkdir -p /var/lib/calico
         ExecStartPre=/usr/bin/mkdir -p /var/lib/kubelet
@@ -379,13 +379,13 @@ coreos:
         {{if checkVersion "<1.10" .K8sVer -}}
         --require-kubeconfig \
         {{end -}}
-        --cni-conf-dir=/etc/cni/net.d \
+        --cni-conf-dir=/etc/kubernetes/cni/net.d \
         --cni-bin-dir=/opt/cni/bin \
         --volume-plugin-dir=/var/lib/kubelet/volumeplugins/ \
         --network-plugin={{.K8sNetworkPlugin}} \
         --container-runtime={{.ContainerRuntime}} \
         --register-node=true \
-        --node-labels=node.kubernetes.io/role="master",service-cidr={{ .ServiceCIDR | toLabel }}{{if .NodeLabels.Enabled}},{{.NodeLabels.String}}{{end}} \
+        --node-labels=node-role.kubernetes.io/master="",node.kubernetes.io/role="master",service-cidr={{ .ServiceCIDR | toLabel }}{{if .NodeLabels.Enabled}},{{.NodeLabels.String}}{{end}} \
         --register-with-taints=node.kubernetes.io/role=master:NoSchedule \
         --config=/etc/kubernetes/config/kubelet.yaml \
         {{- if .Experimental.CloudControllerManager.Enabled }}
@@ -1540,9 +1540,11 @@ write_files:
               # This container installs the CNI binaries
               # and CNI network config file on each node.
               - name: install-cni
-                image: {{ .Kubernetes.Networking.SelfHosting.CalicoNodeImage.RepoWithTag }}
+                image: {{ .Kubernetes.Networking.SelfHosting.CalicoCniImage.RepoWithTag }}
                 command: ["/install-cni.sh"]
                 env:
+                  - name: CNI_NET_DIR
+                    value: /etc/kubernetes/cni/net.d
                   # Name of the CNI config file to create.
                   - name: CNI_CONF_NAME
                     value: "10-calico.conflist"
@@ -1712,7 +1714,7 @@ write_files:
                   path: /opt/cni/bin
               - name: cni-net-dir
                 hostPath:
-                  path: /etc/cni/net.d
+                  path: /etc/kubernetes/cni/net.d
               # Mount in the directory for host-local IPAM allocations. This is
               # used when upgrading from host-local to calico-ipam, and can be removed
               # if not using the upgrade-ipam init container.
@@ -5359,7 +5361,7 @@ write_files:
               hostPath:
                 # changed from /etc/cni/net.d to /etc/cni/net.d to accomodate kube-aws' setup
                 # original: https://github.com/aws/amazon-vpc-cni-k8s/blob/a91e807c8d752a13f8047f54fa78fcd3a37dfc20/config/v1.1/aws-k8s-cni.yaml#L92
-                path: /etc/cni/net.d
+                path: /etc/kubernetes/cni/net.d
             - name: log-dir
               hostPath:
                 path: /var/log

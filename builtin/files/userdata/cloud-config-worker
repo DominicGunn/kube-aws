@@ -284,21 +284,6 @@ coreos:
             [Service]
             Environment="DOCKER_OPTS=--log-opt max-size=50m --log-opt max-file=3"
 
-    - name: flanneld.service
-      enable: false
-    {{ if .AssetsEncryptionEnabled -}}
-    - name: decrypt-assets.service
-      enable: true
-      command: start
-      content: |
-        [Unit]
-        Description=Convert encrypted credentials
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        ExecStart=/opt/bin/decrypt-assets
-    {{ end -}}
     - name: kubelet.service
       command: start
       runtime: true
@@ -319,7 +304,7 @@ coreos:
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStartPre=/usr/bin/mkdir -p /opt/cni/bin
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /etc/cni/net.d
+        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/cni/net.d
         ExecStartPre=/usr/bin/mkdir -p /var/run/calico
         ExecStartPre=/usr/bin/mkdir -p /var/lib/calico
         ExecStartPre=/usr/bin/mkdir -p /var/lib/kubelet
@@ -358,7 +343,7 @@ coreos:
         --volume-plugin-dir=/var/lib/kubelet/volumeplugins/ \
         --network-plugin={{.K8sNetworkPlugin}} \
         --container-runtime={{.ContainerRuntime}} \
-        --node-labels=node-role.kubernetes.io/node="",node.kubernetes.io/role="node",node.kubernetes.io/role="{{ toLabel .NodePoolName }}"{{if .NodeLabels.Enabled}},{{.NodeLabels.String}}{{end}} \
+        --node-labels=node.kubernetes.io/role="node",node.kubernetes.io/role="{{ toLabel .NodePoolName }}"{{if .NodeLabels.Enabled}},{{.NodeLabels.String}}{{end}} \
         --register-node=true \
         --config=/etc/kubernetes/config/kubelet.yaml \
         {{- if .Taints }}

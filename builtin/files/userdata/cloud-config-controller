@@ -301,22 +301,6 @@ coreos:
             [Service]
             Environment="DOCKER_OPTS=--log-opt max-size=50m --log-opt max-file=3"
 
-    - name: flanneld.service
-      enable: false
-    {{ if .AssetsEncryptionEnabled -}}
-    - name: decrypt-assets.service
-      enable: true
-      command: start
-      content: |
-        [Unit]
-        Description=Convert encrypted credentials
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        ExecStart=/opt/bin/retry 10 /opt/bin/decrypt-assets
-    {{- end }}
-
     - name: kubelet.service
       command: start
       runtime: true
@@ -385,7 +369,7 @@ coreos:
         --network-plugin={{.K8sNetworkPlugin}} \
         --container-runtime={{.ContainerRuntime}} \
         --register-node=true \
-        --node-labels=node-role.kubernetes.io/master="",node.kubernetes.io/role="master",service-cidr={{ .ServiceCIDR | toLabel }}{{if .NodeLabels.Enabled}},{{.NodeLabels.String}}{{end}} \
+        --node-labels=node.kubernetes.io/role="master",service-cidr={{ .ServiceCIDR | toLabel }}{{if .NodeLabels.Enabled}},{{.NodeLabels.String}}{{end}} \
         --register-with-taints=node.kubernetes.io/role=master:NoSchedule \
         --config=/etc/kubernetes/config/kubelet.yaml \
         {{- if .Experimental.CloudControllerManager.Enabled }}
@@ -1044,14 +1028,11 @@ write_files:
       deploy "${rbac}/network-daemonsets.yaml"
       {{- if .Kubernetes.Networking.AmazonVPC.Enabled }}
       deploy "${mfdir}/aws-k8s-cni.yaml"
-      remove "${mfdir}/flannel.yaml"
       remove "${mfdir}/canal.yaml"
       {{- else if eq .Kubernetes.Networking.SelfHosting.Type "canal" }}
-      remove "${mfdir}/flannel.yaml"
       deploy "${mfdir}/canal.yaml"
       {{- else }}
       remove "${mfdir}/canal.yaml"
-      deploy "${mfdir}/flannel.yaml"
       {{- end }}
 
       # CLUSTER DNS

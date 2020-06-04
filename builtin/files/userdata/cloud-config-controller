@@ -301,6 +301,20 @@ coreos:
             [Service]
             Environment="DOCKER_OPTS=--log-opt max-size=50m --log-opt max-file=3"
 
+    {{ if .AssetsEncryptionEnabled -}}
+    - name: decrypt-assets.service
+      enable: true
+      command: start
+      content: |
+        [Unit]
+        Description=Convert encrypted credentials
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/opt/bin/retry 10 /opt/bin/decrypt-assets
+    {{- end }}
+    
     - name: kubelet.service
       command: start
       runtime: true
